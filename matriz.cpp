@@ -8,12 +8,12 @@ vector<vector<double> > create_matrix(int len);
 void print_matrix(vector<vector<double> > matriz,int len);              
 void print_vector(vector<double> vetor,int len);
 void adotar_padrao(vector<vector<double> > &matriz,vector<double> &vector_b);
-vector<double> matrix_LU(vector<vector<double> > matriz,int len,vector<double> vector_b);            
+vector<double> matrix_LU(vector<vector<double> > matriz,int len,vector<double> vector_b);            // com pivoteamento
 vector<double> matrix_doolittle(vector<vector<double> > matriz,int len,vector<double> vector_b);
+vector<double> matrix_LU_sempivot(vector<vector<double> > matriz,int len,vector<double> vector_b);
 vector<vector<double> > matrix_l(vector<double> factor,int len);      
-vector<double> vector_y(vector<double> factor,vector<double> vector_b,int len); 
-vector<double> vector_x(vector<vector<double> > matrix, vector<double> y,int len); 
-
+vector<double> vector_y(vector<double> factor,vector<double> vector_b,int len); //acha vetor y
+vector<double> vector_x(vector<vector<double> > matrix, vector<double> y,int len); //resultado item a)
 
 int main(){
 
@@ -21,7 +21,7 @@ int main(){
 	setlocale(LC_ALL, "Portuguese");
 	vector<double> vector_b;
 	
-	cout<<"############TRABALHO DE METODOS############\n Fatoracao LU\n"<<endl;
+	cout<<"###############TRABALHO DE METODOS###############\n Fatoracao LU\n"<<endl;
 	
 	cout<<"\nDeseja calibrar o sistema usando a matriz A e o vetor d padrão?[Y/N]"<<endl;
 	cin>>validade;
@@ -52,19 +52,17 @@ int main(){
     }
     system("cls");
     
-    cout<<"\n\n Dados metodo LU"<<endl;
+    cout<<"\nDados metodo LU SEM PIVOT\n"<<endl;
+    vector<double> LU_sempivot=matrix_LU_sempivot(matriz,dimen_matriz,vector_b);
     vector<double> LU_x=matrix_LU(matriz,dimen_matriz,vector_b);
     cout<<"\nDados metodo doolittle:\n"<<endl;
 	vector<double> doolittle_x =matrix_doolittle(matriz,dimen_matriz,vector_b);
-	cout<<"\n\n#####Tabela resultado:#####\n\n     LU   doolittle\n"<<endl;
-	
-	vector<double>::iterator it=doolittle_x.begin();
-	vector<double>::iterator it2=LU_x.begin();
+	cout<<"\n\n#####Tabela resultado:#####\n\n     LU   doolittle    LU SEM PIVOT\n"<<endl;
 	
 	for(int i=dimen_matriz-1;i>=0;i--){
-		cout<<"X"<<dimen_matriz-i<<"    "<<*(it2+i)<<"     "<<*(it+i)<<endl;
+		cout<<"X"<<dimen_matriz-i<<"    "<<LU_x[i]<<"       "<<doolittle_x[i]<<"             "<<LU_sempivot[i]<<endl;
 	}
-
+	
 }
 
 vector<double> matrix_doolittle(vector<vector<double> > matriz,int len,vector<double> vector_b){
@@ -107,6 +105,62 @@ vector<double> matrix_doolittle(vector<vector<double> > matriz,int len,vector<do
 	print_matrix(matrix_u,len);
 	cout<<"Matriz L:"<<endl;
 	print_matrix(matrix_l,len);
+	cout<<"Vetor Y:"<<endl;
+	print_vector(y,len);
+
+	return x;
+	
+}
+
+
+vector<double> matrix_LU_sempivot(vector<vector<double> > matriz,int len,vector<double> vector_b){
+	
+	double pivot=0,aux=0,aux2=0,aux3=0; int count=1;
+	vector<double> permutacao;
+	vector<double> factor;
+	
+	for(int i=1;i<=len;i++){
+		permutacao.push_back(i);
+	}
+
+	for(int k=0;k<len;k++){
+		for(int z=k;z<len;z++){
+			if(matriz[z][k]>matriz[k][k]){
+				aux2=vector_b[z];
+				vector_b[z]=vector_b[k];                  // troca o elemento do vetor b
+				vector_b[k]=aux2;
+				
+				aux3=permutacao[z];
+				permutacao[z]=permutacao[k];             // vetor permutacao
+				permutacao[k]=aux3;
+				
+				for(int l=0;l<len;l++){
+					aux2=matriz[z][l];
+					matriz[z][l]=matriz[k][l];           // troca linha da matriz
+					matriz[k][l]=aux2;
+				}
+			}
+		}
+		pivot=matriz[k][k];	
+		for(int i=0;i<len;i++){
+			if(i>k){
+				aux=matriz[i][k];
+				factor.push_back(aux/pivot);
+				for(int j=0;j<len;j++){
+					matriz[i][j]=matriz[i][j]-matriz[k][j]*aux/pivot;
+				}
+			}
+		}	
+	}
+	
+	vector<vector<double> > matrix_factor=matrix_l(factor,len);
+	vector<double> y=vector_y(factor,vector_b,len);
+	vector<double> x=vector_x(matriz,y,len);
+	
+	cout<<"Matriz U:"<<endl;
+	print_matrix(matriz,len);
+	cout<<"Matriz L:"<<endl;
+	print_matrix(matrix_factor,len);
 	cout<<"Vetor Y:"<<endl;
 	print_vector(y,len);
 	
@@ -169,18 +223,8 @@ vector<double> matrix_LU(vector<vector<double> > matriz,int len,vector<double> v
 		}	
 	}
 	
-	vector<vector<double> > matrix_factor=matrix_l(factor,len);
 	vector<double> y=vector_y(factor,vector_b,len);
 	vector<double> x=vector_x(matriz,y,len);
-	
-	system("cls"); 
-	cout<<"############TRABALHO DE METODOS############\n Fatoracao LU\n"<<endl;
-	cout<<"Matriz U:"<<endl;
-	print_matrix(matriz,len);
-	cout<<"Matriz L:"<<endl;
-	print_matrix(matrix_factor,len);
-	cout<<"Vetor Y:"<<endl;
-	print_vector(y,len);
 	
 	return x;
 	
